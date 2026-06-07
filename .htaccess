@@ -1,0 +1,49 @@
+# =====================================================================
+# Centro Psiquis · pareja.centropsiquis.cl
+# Cache strategy: HTML siempre revalida; JS/CSS pueden cachearse pero
+# el HTML sirve URLs versionadas (?v=BUILD_ID) → cuando hay nueva versión
+# el navegador refetch porque la URL del asset cambia.
+# =====================================================================
+
+<IfModule mod_headers.c>
+  # HTML: NUNCA cachear sin revalidar
+  <FilesMatch "\.(html?)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
+
+  # version.txt: NUNCA cachear (lo usa el version-checker inline para detectar deploys)
+  <FilesMatch "^version\.txt$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
+
+  # JS/CSS: cache de 7 días + revalidación obligatoria (versionados via ?v=)
+  <FilesMatch "\.(js|css)$">
+    Header set Cache-Control "public, max-age=604800, must-revalidate"
+  </FilesMatch>
+
+  # Fuentes (cache largo — no cambian)
+  <FilesMatch "\.(woff2?|ico)$">
+    Header set Cache-Control "public, max-age=2592000"
+  </FilesMatch>
+
+  # Imágenes: cache pero CON revalidación obligatoria (browser pregunta si cambió antes de servir cache)
+  <FilesMatch "\.(jpg|jpeg|png|webp|svg|gif)$">
+    Header set Cache-Control "public, max-age=86400, must-revalidate"
+  </FilesMatch>
+</IfModule>
+
+# Compresión gzip / brotli si está disponible
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml
+</IfModule>
+
+# Forzar HTTPS
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTPS} off
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
